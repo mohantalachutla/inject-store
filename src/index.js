@@ -131,7 +131,6 @@ export const createReduxStore = ({ middlewares = [] }) => {
       throw new Error('Middleware is not a function or an object')
     }
   })
-  store.middlewares = middlewares
   const store = configureStore({
     reducer: {},
     middleware: (getDefaultMiddleware) =>
@@ -142,6 +141,7 @@ export const createReduxStore = ({ middlewares = [] }) => {
   if (!isStoreValid(store)) {
     throw new Error('Failed to create store')
   }
+  store.middlewares = middlewares
   if (isBrowser()) {
     window.__REDUX_STORE__ = store
   }
