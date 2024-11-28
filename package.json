@@ -1,0 +1,26 @@
+{
+  "name": "@mohantalachutla/inject-store",
+  "version": "1.0.0",
+  "description": "Mfe store library",
+  "main": "lib/index.js",
+  "scripts": {
+    "start": "rollup -c -w --environment NODE_ENV:development",
+    "build": "rollup -c --environment NODE_ENV:production"
+  },
+  "module": "module",
+  "files": [
+    "lib/"
+  ],
+  "author": "Mohan Talachutla",
+  "license": "ISC",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.1",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup": "^4.24.0"
+  },
+  "peerDependencies": {
+    "@reduxjs/toolkit": "^2.3.0",
+    "redux": "^5.0.1"
+  }
+}
