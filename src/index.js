@@ -1,5 +1,5 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit'
-import { isBrowser, isFunction, isGlobal, isObject } from './utils'
+import { isBrowser, isEmpty, isFunction, isGlobal, isObject } from './utils'
 
 /**
  * Checks if the given store is valid.
@@ -82,17 +82,21 @@ export const createInjectReducer = (store) => {
   store.runningReducers = {}
   const getReducer = (key) => store.runningReducers[key]
   const injectReducer = (key, reducer) => {
+    if (isEmpty(reducer)) return
+    if (isEmpty(key)) return
     if (store.runningReducers[key]) return store.runningReducers[key]
     if (typeof reducer !== 'function')
       throw new Error('Reducer must be a function')
     store.runningReducers[key] = reducer
-    store.replaceReducer(combineReducers(store.runningReducers))
+    const reducers = { ...(store.runningReducers ?? {}), ...noopReducer }
+    store.replaceReducer(combineReducers(reducers))
     return store.runningReducers[key]
   }
   const cancelReducer = (key) => {
     if (store.runningReducers[key]) {
       delete store.runningReducers[key]
-      store.replaceReducer(combineReducers(store.runningReducers))
+      const reducers = { ...(store.runningReducers ?? {}), ...noopReducer }
+      store.replaceReducer(combineReducers(reducers))
     }
   }
   const injectReducers = (reducers) => {
@@ -109,6 +113,8 @@ export const createInjectReducer = (store) => {
   store.getReducer = getReducer
   return { injectReducer, getReducer, cancelReducer, injectReducers }
 }
+
+const noopReducer = { _noop: (state = {}) => state }
 
 /**
  * Creates a new Redux store instance with the given middleware.
@@ -132,7 +138,7 @@ export const createReduxStore = ({ middlewares = [] }) => {
     }
   })
   const store = configureStore({
-    reducer: {},
+    reducer: noopReducer,
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({ serializableCheck: false }).concat([
         ...middlewares,
