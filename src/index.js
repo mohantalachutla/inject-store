@@ -16,10 +16,30 @@ import {
  * @param {Object} store - The store to check.
  * @returns {boolean} true if the store is valid, false otherwise.
  */
-const isStoreValid = function (store) {
-  if (store && store?.dispatch && store?.getState && store?.subscribe) {
+const isStoreValid = function (store, middlewares = []) {
+  if (isEmpty(store)) return false
+  let valid =
+    store &&
+    store.dispatch &&
+    isFunction(store.dispatch) &&
+    store.getState &&
+    isFunction(store.getState) &&
+    store.subscribe &&
+    isFunction(store.subscribe) &&
+    store.replaceReducer &&
+    isFunction(store.replaceReducer)
+
+  valid = valid && !isEmpty(store.runningReducers)
+  // if(!isEmpty(middlewares) && !isEmpty(store.middlewares)){}
+  // let storedMiddlewares = store.middlewares
+  // valid &&
+  //   middlewares.forEach((middleware) => {
+  //     valid = valid && storedMiddlewares.includes(middleware)
+  //   })
+  if (valid) {
     return true
   }
+  console.error('Invalid store')
   return false
 }
 
@@ -46,7 +66,7 @@ export const createInjectSaga = (store, runSaga) => {
   if (!isFunction(runSaga)) {
     throw new Error('runSaga is not a function')
   }
-  store.runningSagas = {}
+  if (store.runningSagas === undefined) store.runningSagas = {}
   const getSaga = (key) => store.runningSagas[key]
   const injectSaga = (key, saga) => {
     if (store.runningSagas[key]) return store.runningSagas[key]
@@ -86,7 +106,7 @@ export const createInjectReducer = (store) => {
   if (!isStoreValid(store)) {
     throw new Error('Store is not valid')
   }
-  store.runningReducers = {}
+  if (store.runningReducers === undefined) store.runningReducers = {}
   const getReducer = (key) => store.runningReducers[key]
   const injectReducer = (key, reducer) => {
     if (isEmpty(reducer)) return
@@ -141,8 +161,12 @@ export const createReduxStore = ({ middlewares = [] }) => {
       throw new Error('Middleware is not a function or an object')
     }
   })
-  if (isStoreValid(getGlobal('__REDUX_STORE__'), middlewares)) {
-    return getGlobal('__REDUX_STORE__')
+  const existingStore = getGlobal('__REDUX_STORE__')
+  if (!isEmpty(existingStore)) {
+    if (!isStoreValid(existingStore, middlewares)) {
+      throw new Error('Existing store is not valid')
+    }
+    return existingStore
   }
   const store = configureStore({
     reducer: noopReducer,
@@ -151,10 +175,11 @@ export const createReduxStore = ({ middlewares = [] }) => {
         ...middlewares,
       ]),
   })
+  store.runningReducers = noopReducer
+  store.middlewares = middlewares
   if (!isStoreValid(store)) {
     throw new Error('Failed to create store')
   }
-  store.middlewares = middlewares
   setGlobal('__REDUX_STORE__', store)
   window &&
     window.__REDUX_DEVTOOLS_EXTENSION__ &&
