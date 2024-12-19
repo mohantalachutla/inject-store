@@ -48,3 +48,7 @@ export const getGlobal = (key) => {
     return globalThis[key]
   } else throw new Error('No global object found')
 }
+
+export const entries = (obj) => Object.entries(obj)
+export const keys = (obj) => Object.keys(obj)
+export const values = (obj) => Object.values(obj)

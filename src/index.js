@@ -6,7 +6,9 @@ import {
   isFunction,
   isObject,
   setGlobal,
+  values,
 } from './utils'
+import { __REDUX_STORE__, SAGA_MIDDLEWARE } from './constants'
 
 /**
  * Checks if the given store is valid.
@@ -16,7 +18,7 @@ import {
  * @param {Object} store - The store to check.
  * @returns {boolean} true if the store is valid, false otherwise.
  */
-const isStoreValid = function (store, middlewares = []) {
+const isStoreValid = function (store, middlewares = {}) {
   if (isEmpty(store)) return false
   let valid =
     store &&
@@ -59,7 +61,7 @@ const isStoreValid = function (store, middlewares = []) {
  * @throws {Error} If the store is not valid.
  * @throws {Error} If the runSaga function is not valid.
  */
-export const createInjectSaga = (store, runSaga) => {
+const createInjectSaga = (store, runSaga) => {
   if (!isStoreValid(store)) {
     throw new Error('Store is not valid')
   }
@@ -102,7 +104,7 @@ export const createInjectSaga = (store, runSaga) => {
  *
  * @throws {Error} If the store is not valid.
  */
-export const createInjectReducer = (store) => {
+const createInjectReducer = (store) => {
   if (!isStoreValid(store)) {
     throw new Error('Store is not valid')
   }
@@ -144,27 +146,35 @@ export const createInjectReducer = (store) => {
 const noopReducer = { _noop: (state = {}) => state }
 
 /**
- * Creates a new Redux store instance with the given middleware.
+ * Creates a Redux store with the given middlewares.
  *
- * If the global `__REDUX_STORE__` variable is set, it returns that store.
- * Otherwise, it creates a new store and assigns it to `__REDUX_STORE__`.
+ * If a global Redux store exists and is valid, it is returned.
+ * Otherwise, a new store is created with the given middlewares.
  *
- * @param {Object} options - An object with the following properties:
- * - `middlewares`: An array of Redux middleware functions.
- * @returns {Store} The Redux store instance.
- * @throws {Error} If the store is not created successfully.
+ * The store is stored on the global object under the `__REDUX_STORE__` key.
+ *
+ * If the Redux DevTools browser extension is installed, it is enabled.
+ *
+ * The `injectReducer` and `injectSaga` methods are added to the store.
+ *
+ * @param {Object} [options={}] - An options object.
+ * @param {Object} [options.middlewares={}] - An object of middlewares to use.
+ * Each middleware is either a function or an object with a `run` method.
+ * @returns {Object} The created Redux store.
  */
-export const createReduxStore = ({ middlewares = [] }) => {
+export const createReduxStore = ({ middlewares = {} }) => {
   if (!isBrowser()) console.warn('\n\n\nNo window object found.\n\n\n')
-  middlewares.forEach((middleware) => {
+  values(middlewares).forEach((middleware) => {
     if (!isObject(middleware) && !isFunction(middleware)) {
       throw new Error('Middleware is not a function or an object')
     }
   })
-  const existingStore = getGlobal('__REDUX_STORE__')
+  const existingStore = getGlobal(__REDUX_STORE__)
   if (!isEmpty(existingStore)) {
     if (!isStoreValid(existingStore, middlewares)) {
-      throw new Error('Existing store is not valid')
+      throw new Error(
+        'Existing store is not valid or does not match existing middlewares'
+      )
     }
     return existingStore
   }
@@ -172,7 +182,7 @@ export const createReduxStore = ({ middlewares = [] }) => {
     reducer: noopReducer,
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({ serializableCheck: false }).concat([
-        ...middlewares,
+        ...values(middlewares),
       ]),
   })
   store.runningReducers = noopReducer
@@ -180,9 +190,13 @@ export const createReduxStore = ({ middlewares = [] }) => {
   if (!isStoreValid(store)) {
     throw new Error('Failed to create store')
   }
-  setGlobal('__REDUX_STORE__', store)
-  window &&
-    window.__REDUX_DEVTOOLS_EXTENSION__ &&
+  setGlobal(__REDUX_STORE__, store)
+  if (window?.__REDUX_DEVTOOLS_EXTENSION__) {
     window.__REDUX_DEVTOOLS_EXTENSION__()
+  }
+  createInjectReducer(store)
+  if (middlewares[SAGA_MIDDLEWARE] && middlewares[SAGA_MIDDLEWARE].run) {
+    createInjectSaga(store, middlewares[SAGA_MIDDLEWARE].run)
+  }
   return store
 }
