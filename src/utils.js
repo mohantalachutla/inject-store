@@ -33,11 +33,12 @@ export const isGlobal = () => typeof globalThis !== 'undefined'
 
 export const setGlobal = (key, value) => {
   if (isBrowser()) {
+    console.debug(`setGlobal: window ${key}`)
     window[key] = value
   } else if (isGlobal()) {
+    console.debug(`setGlobal: globalThis ${key}`)
     globalThis[key] = value
-  }
-  throw new Error('No global object found')
+  } else throw new Error('No global object found')
 }
 
 export const getGlobal = (key) => {
@@ -45,6 +46,5 @@ export const getGlobal = (key) => {
     return window[key]
   } else if (isGlobal()) {
     return globalThis[key]
-  }
-  throw new Error('No global object found')
+  } else throw new Error('No global object found')
 }

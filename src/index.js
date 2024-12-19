@@ -1,5 +1,12 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit'
-import { isBrowser, isEmpty, isFunction, isGlobal, isObject } from './utils'
+import {
+  getGlobal,
+  isBrowser,
+  isEmpty,
+  isFunction,
+  isObject,
+  setGlobal,
+} from './utils'
 
 /**
  * Checks if the given store is valid.
