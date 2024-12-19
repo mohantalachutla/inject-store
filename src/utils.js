@@ -30,3 +30,21 @@ const isArray = (value) => {
 
 export const isBrowser = () => typeof window !== 'undefined'
 export const isGlobal = () => typeof globalThis !== 'undefined'
+
+export const setGlobal = (key, value) => {
+  if (isBrowser()) {
+    window[key] = value
+  } else if (isGlobal()) {
+    globalThis[key] = value
+  }
+  throw new Error('No global object found')
+}
+
+export const getGlobal = (key) => {
+  if (isBrowser()) {
+    return window[key]
+  } else if (isGlobal()) {
+    return globalThis[key]
+  }
+  throw new Error('No global object found')
+}

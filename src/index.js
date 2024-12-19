@@ -129,14 +129,14 @@ const noopReducer = { _noop: (state = {}) => state }
  */
 export const createReduxStore = ({ middlewares = [] }) => {
   if (!isBrowser()) console.warn('\n\n\nNo window object found.\n\n\n')
-  if (window?.__REDUX_STORE__ && isStoreValid(window.__REDUX_STORE__)) {
-    return window.__REDUX_STORE__
-  }
   middlewares.forEach((middleware) => {
     if (!isObject(middleware) && !isFunction(middleware)) {
       throw new Error('Middleware is not a function or an object')
     }
   })
+  if (isStoreValid(getGlobal('__REDUX_STORE__'), middlewares)) {
+    return getGlobal('__REDUX_STORE__')
+  }
   const store = configureStore({
     reducer: noopReducer,
     middleware: (getDefaultMiddleware) =>
@@ -148,12 +148,9 @@ export const createReduxStore = ({ middlewares = [] }) => {
     throw new Error('Failed to create store')
   }
   store.middlewares = middlewares
-  if (isBrowser()) {
-    window.__REDUX_STORE__ = store
-  }
-  if (isGlobal()) {
-    globalThis.__REDUX_STORE__ = store
-  }
-  window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
+  setGlobal('__REDUX_STORE__', store)
+  window &&
+    window.__REDUX_DEVTOOLS_EXTENSION__ &&
+    window.__REDUX_DEVTOOLS_EXTENSION__()
   return store
 }
